@@ -95,6 +95,13 @@ func (f *TypeScriptFrontend) Analyze(path string, src []byte) (*FileAnalysis, er
 		}
 	}
 
+	// Collect anonymous functions (arrow functions, function expressions) spanning 3+ lines
+	fa.Definitions = append(fa.Definitions, collectAnonymousFunctions(root, src, 3)...)
+
+	fa.MaxNestingDepth = ComputeMaxNestingDepth(root)
+	fa.NodeDiversity = ComputeNodeDiversity(root)
+	fa.MaxBranching = ComputeMaxBranching(root)
+
 	return fa, nil
 }
 
@@ -115,7 +122,25 @@ func extractTSFuncDecl(node *tree_sitter.Node, src []byte, className string) (De
 		QualifiedName: qualified,
 		Kind:          kind,
 		Line:          int(node.StartPosition().Row) + 1,
+		EndLine:       int(node.EndPosition().Row) + 1,
+		ParamCount:    countTSParams(node),
 	}, true
+}
+
+func countTSParams(node *tree_sitter.Node) int {
+	params := node.ChildByFieldName("parameters")
+	if params == nil {
+		return 0
+	}
+	count := 0
+	for i := uint(0); i < params.NamedChildCount(); i++ {
+		child := params.NamedChild(i)
+		switch child.Kind() {
+		case "required_parameter", "optional_parameter", "rest_parameter":
+			count++
+		}
+	}
+	return count
 }
 
 func extractTSClassDecl(node *tree_sitter.Node, src []byte) Definition {
@@ -126,6 +151,7 @@ func extractTSClassDecl(node *tree_sitter.Node, src []byte) Definition {
 		QualifiedName: name,
 		Kind:          "class",
 		Line:          int(node.StartPosition().Row) + 1,
+		EndLine:       int(node.EndPosition().Row) + 1,
 	}
 }
 
@@ -142,7 +168,7 @@ func extractTSMethods(classNode *tree_sitter.Node, src []byte) []Definition {
 	for i := uint(0); i < body.NamedChildCount(); i++ {
 		child := body.NamedChild(i)
 		switch child.Kind() {
-		case "method_definition", "public_field_definition":
+		case "method_definition":
 			nameNode := child.ChildByFieldName("name")
 			if nameNode != nil {
 				name := nodeText(nameNode, src)
@@ -151,6 +177,20 @@ func extractTSMethods(classNode *tree_sitter.Node, src []byte) []Definition {
 					QualifiedName: className + "." + name,
 					Kind:          "method",
 					Line:          int(child.StartPosition().Row) + 1,
+					EndLine:       int(child.EndPosition().Row) + 1,
+					ParamCount:    countTSParams(child),
+				})
+			}
+		case "public_field_definition":
+			nameNode := child.ChildByFieldName("name")
+			if nameNode != nil {
+				name := nodeText(nameNode, src)
+				defs = append(defs, Definition{
+					Name:          name,
+					QualifiedName: className + "." + name,
+					Kind:          "constant",
+					Line:          int(child.StartPosition().Row) + 1,
+					EndLine:       int(child.EndPosition().Row) + 1,
 				})
 			}
 		}
@@ -184,6 +224,7 @@ func extractTSLexicalDecl(node *tree_sitter.Node, src []byte) []Definition {
 					QualifiedName: name,
 					Kind:          kind,
 					Line:          int(child.StartPosition().Row) + 1,
+					EndLine:       int(child.EndPosition().Row) + 1,
 				})
 			}
 		}
@@ -202,6 +243,7 @@ func extractTSTypeAlias(node *tree_sitter.Node, src []byte) (Definition, bool) {
 		QualifiedName: name,
 		Kind:          "type",
 		Line:          int(node.StartPosition().Row) + 1,
+		EndLine:       int(node.EndPosition().Row) + 1,
 	}, true
 }
 
@@ -216,6 +258,7 @@ func extractTSInterface(node *tree_sitter.Node, src []byte) (Definition, bool) {
 		QualifiedName: name,
 		Kind:          "type",
 		Line:          int(node.StartPosition().Row) + 1,
+		EndLine:       int(node.EndPosition().Row) + 1,
 	}, true
 }
 
@@ -230,6 +273,7 @@ func extractTSEnum(node *tree_sitter.Node, src []byte) (Definition, bool) {
 		QualifiedName: name,
 		Kind:          "type",
 		Line:          int(node.StartPosition().Row) + 1,
+		EndLine:       int(node.EndPosition().Row) + 1,
 	}, true
 }
 

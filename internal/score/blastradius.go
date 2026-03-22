@@ -3,15 +3,29 @@ package score
 import (
 	"sort"
 
-	"github.com/justindotpub/adit-code/internal/lang"
+	"github.com/justinstimatze/adit-code/internal/lang"
 )
 
-// ComputeBlastRadius computes how many files import from this file.
-func ComputeBlastRadius(path string, analyses map[string]*lang.FileAnalysis, consumers importConsumerMap) BlastRadius {
-	// Find all files that import from this file's module path.
-	// We need to figure out what module name(s) correspond to this file.
-	// For now, we track which names defined in this file are imported by others.
+// nameConsumerIndex maps a name to all its consumer map entries.
+// This avoids O(n) scan of the full consumer map per definition.
+type nameConsumerIndex map[string][]importKeyConsumers
 
+type importKeyConsumers struct {
+	key       importKey
+	consumers map[string]bool
+}
+
+// buildNameConsumerIndex creates a lookup from name to consumer entries.
+func buildNameConsumerIndex(consumers importConsumerMap) nameConsumerIndex {
+	idx := make(nameConsumerIndex)
+	for key, consumerSet := range consumers {
+		idx[key.Name] = append(idx[key.Name], importKeyConsumers{key, consumerSet})
+	}
+	return idx
+}
+
+// ComputeBlastRadius computes how many files import from this file.
+func ComputeBlastRadius(path string, analyses map[string]*lang.FileAnalysis, ncIdx nameConsumerIndex) BlastRadius {
 	importedBy := make(map[string]bool)
 	nameConsumers := make(map[string]int)
 
@@ -20,29 +34,26 @@ func ComputeBlastRadius(path string, analyses map[string]*lang.FileAnalysis, con
 		return BlastRadius{}
 	}
 
-	// For each name defined in this file, check if other files import it
 	for _, def := range fa.Definitions {
-		// Check all consumer map entries for this name
-		for key, consumerSet := range consumers {
-			if key.Name == def.Name {
-				for consumer := range consumerSet {
-					if consumer != path {
-						importedBy[consumer] = true
-						nameConsumers[def.Name]++
-					}
+		consumersForName := make(map[string]bool)
+		entries := ncIdx[def.Name]
+		for _, entry := range entries {
+			for consumer := range entry.consumers {
+				if consumer != path {
+					importedBy[consumer] = true
+					consumersForName[consumer] = true
 				}
 			}
 		}
+		nameConsumers[def.Name] = len(consumersForName)
 	}
 
-	// Build imported-by list
 	var importedByList []string
 	for f := range importedBy {
 		importedByList = append(importedByList, f)
 	}
 	sort.Strings(importedByList)
 
-	// Build most-exported list
 	var mostExported []ExportedName
 	for name, count := range nameConsumers {
 		mostExported = append(mostExported, ExportedName{Name: name, Consumers: count})
@@ -50,7 +61,6 @@ func ComputeBlastRadius(path string, analyses map[string]*lang.FileAnalysis, con
 	sort.Slice(mostExported, func(i, j int) bool {
 		return mostExported[i].Consumers > mostExported[j].Consumers
 	})
-	// Keep top 5
 	if len(mostExported) > 5 {
 		mostExported = mostExported[:5]
 	}

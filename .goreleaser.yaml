@@ -1,0 +1,41 @@
+version: 2
+
+dist: .goreleaser-dist
+
+builds:
+  - id: adit
+    main: ./cmd/adit
+    binary: adit
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - linux
+    goarch:
+      - amd64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+
+archives:
+  - id: default
+    formats: ['tar.gz']
+    name_template: "adit-code_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: 'checksums.txt'
+
+changelog:
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+
+release:
+  github:
+    owner: justinstimatze
+    name: adit-code
+  draft: false
+  prerelease: auto

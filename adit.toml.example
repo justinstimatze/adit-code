@@ -9,18 +9,28 @@ max_unnecessary_reads = 3      # Single-consumer imports that should be co-locat
 max_ambiguity_defs = 3         # Name defined in N+ files = ambiguous
 max_blast_radius = 20          # File imported by 20+ files = too central
 max_cycle_length = 0           # 0 = no cycles allowed
+# max_nesting_depth = 10       # Uncomment to enforce (0 = not enforced)
+# max_params = 15              # Uncomment to enforce (0 = not enforced)
 
 # What to scan
 [scan]
-languages = ["python", "typescript"]
 exclude = [
   "*_test.go", "test_*.py", "*_test.py",
   "*.test.ts", "*.spec.ts",
   "**/__pycache__/**", "**/node_modules/**",
   "**/vendor/**", "**/.venv/**",
+  "**/testdata/**", "**/fixtures/**",
 ]
 
-# Context window (informational — shown in --pretty output)
+# Per-path threshold overrides (glob patterns match basename or full path)
+[per-path."test_*.py"]
+max_file_lines = 5000
+max_context_reads = 20
+
+[per-path."*.test.ts"]
+max_file_lines = 5000
+
+# Context window (informational — not used for scoring)
 [context]
-window_tokens = 200_000
+window_tokens = 1_000_000
 usable_fraction = 0.75

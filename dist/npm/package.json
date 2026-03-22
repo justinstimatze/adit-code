@@ -1,0 +1,43 @@
+{
+  "name": "adit-code",
+  "version": "0.1.0",
+  "description": "AI-navigability code structure analysis — measures how expensive your code is for AI to edit",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/justinstimatze/adit-code.git"
+  },
+  "homepage": "https://github.com/justinstimatze/adit-code",
+  "bugs": {
+    "url": "https://github.com/justinstimatze/adit-code/issues"
+  },
+  "keywords": [
+    "ai",
+    "code-quality",
+    "static-analysis",
+    "tree-sitter",
+    "claude",
+    "codex",
+    "cursor",
+    "mcp"
+  ],
+  "bin": {
+    "adit": "bin/adit"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "optionalDependencies": {
+    "@adit-code/darwin-arm64": "0.1.0",
+    "@adit-code/darwin-x64": "0.1.0",
+    "@adit-code/linux-arm64": "0.1.0",
+    "@adit-code/linux-x64": "0.1.0",
+    "@adit-code/win32-x64": "0.1.0"
+  },
+  "files": [
+    "bin/",
+    "install.js",
+    "README.md",
+    "LICENSE"
+  ]
+}

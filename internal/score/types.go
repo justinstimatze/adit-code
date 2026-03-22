@@ -32,10 +32,12 @@ type AmbiguousName struct {
 	Sites []DefinitionSite `json:"sites"`
 }
 
-// AmbiguityResult is the per-file grep ambiguity measurement.
+// AmbiguityResult is the per-file grep noise measurement.
+// Grep noise = sum of (definition_count - 1) for each name this file defines
+// that is also defined in other files. Measures how much search noise this
+// file's definitions create across the codebase.
 type AmbiguityResult struct {
-	UniqueNames int `json:"unique_names"`
-	TotalNames  int `json:"total_names"`
+	GrepNoise int `json:"grep_noise"`
 }
 
 // ExportedName tracks how many files consume a particular exported name.
@@ -55,17 +57,30 @@ type BlastRadius struct {
 type ImportCycle struct {
 	Files          []string `json:"files"`
 	Length         int      `json:"length"`
-	Recommendation string  `json:"recommendation"`
+	Recommendation string   `json:"recommendation"`
+}
+
+// FunctionStats describes the distribution of function/method lengths in a file.
+type FunctionStats struct {
+	Count     int `json:"count"`
+	MaxLength int `json:"max_length"` // longest function in lines
+	AvgLength int `json:"avg_length"` // average function length in lines
 }
 
 // FileScore is the complete analysis result for a single file.
 type FileScore struct {
-	Path         string          `json:"path"`
-	Lines        int             `json:"lines"`
-	SizeGrade    string          `json:"size_grade"`
-	ContextReads ContextReads    `json:"context_reads"`
-	Ambiguity    AmbiguityResult `json:"ambiguity"`
-	BlastRadius  BlastRadius     `json:"blast_radius"`
+	Path            string          `json:"path"`
+	Lines           int             `json:"lines"`
+	SizeGrade       string          `json:"size_grade"`
+	MaxNestingDepth int             `json:"max_nesting_depth"`
+	NodeDiversity   int             `json:"node_diversity"`
+	MaxParams       int             `json:"max_params"`
+	Functions       FunctionStats   `json:"functions"`
+	ContextReads    ContextReads    `json:"context_reads"`
+	Ambiguity       AmbiguityResult `json:"ambiguity"`
+	Comments        CommentStats    `json:"comments"`
+	Graph           GraphMetrics    `json:"graph"`
+	BlastRadius     BlastRadius     `json:"blast_radius"`
 }
 
 // RepoSummary aggregates cross-file findings.
@@ -83,4 +98,31 @@ type RepoScore struct {
 	FilesScanned int         `json:"files_scanned"`
 	Files        []FileScore `json:"files"`
 	Summary      RepoSummary `json:"summary"`
+}
+
+// Regression is a metric that got worse between two versions.
+type Regression struct {
+	Metric string `json:"metric"`
+	Before int    `json:"before"`
+	After  int    `json:"after"`
+	Delta  int    `json:"delta"` // positive = worse
+}
+
+// FileDiff compares a file's metrics between a ref and HEAD.
+type FileDiff struct {
+	Path        string       `json:"path"`
+	Status      string       `json:"status"` // "modified" | "added" | "deleted"
+	Before      *FileScore   `json:"before,omitempty"`
+	After       *FileScore   `json:"after,omitempty"`
+	Regressions []Regression `json:"regressions,omitempty"`
+}
+
+// DiffResult is the output of adit score --diff.
+type DiffResult struct {
+	Version      string     `json:"version"`
+	Schema       int        `json:"schema"`
+	Ref          string     `json:"ref"`
+	FilesChanged int        `json:"files_changed"`
+	Regressions  int        `json:"regressions_count"`
+	Files        []FileDiff `json:"files"`
 }

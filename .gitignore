@@ -1,14 +1,31 @@
-# Binary
+# Binaries
 /adit
+/adit-validate
+*.exe
+*.test
+*.out
 
 # IDE
 .idea/
 .vscode/
 *.swp
+*~
 
 # Python lint cache (from testdata)
 .ruff_cache/
 __pycache__/
+*.pyc
+
+# Go
+vendor/
+.goreleaser-dist/
 
 # OS
 .DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.*
+*.pem
+*.key

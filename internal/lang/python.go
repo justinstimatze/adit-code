@@ -73,6 +73,13 @@ func (f *PythonFrontend) Analyze(path string, src []byte) (*FileAnalysis, error)
 		}
 	}
 
+	// Collect anonymous functions (lambdas) spanning 3+ lines
+	fa.Definitions = append(fa.Definitions, collectAnonymousFunctions(root, src, 3)...)
+
+	fa.MaxNestingDepth = ComputeMaxNestingDepth(root)
+	fa.NodeDiversity = ComputeNodeDiversity(root)
+	fa.MaxBranching = ComputeMaxBranching(root)
+
 	return fa, nil
 }
 
@@ -85,12 +92,41 @@ func extractPythonFuncDef(node *tree_sitter.Node, src []byte, className string) 
 		qualified = className + "." + name
 		kind = "method"
 	}
+	// Count parameters (excluding self/cls)
+	paramCount := countParams(node, src, kind == "method")
+
 	return Definition{
 		Name:          name,
 		QualifiedName: qualified,
 		Kind:          kind,
 		Line:          int(node.StartPosition().Row) + 1,
+		EndLine:       int(node.EndPosition().Row) + 1,
+		ParamCount:    paramCount,
 	}
+}
+
+// countParams counts parameters of a function node, optionally skipping
+// the first parameter (self/cls for methods).
+func countParams(node *tree_sitter.Node, src []byte, skipFirst bool) int {
+	params := node.ChildByFieldName("parameters")
+	if params == nil {
+		return 0
+	}
+	count := 0
+	for i := uint(0); i < params.NamedChildCount(); i++ {
+		child := params.NamedChild(i)
+		// Skip decorators, type annotations — count actual parameter nodes
+		switch child.Kind() {
+		case "identifier", "typed_parameter", "default_parameter",
+			"typed_default_parameter", "list_splat_pattern",
+			"dictionary_splat_pattern":
+			count++
+		}
+	}
+	if skipFirst && count > 0 {
+		count-- // remove self/cls
+	}
+	return count
 }
 
 func extractPythonClassDef(node *tree_sitter.Node, src []byte) Definition {
@@ -101,6 +137,7 @@ func extractPythonClassDef(node *tree_sitter.Node, src []byte) Definition {
 		QualifiedName: name,
 		Kind:          "class",
 		Line:          int(node.StartPosition().Row) + 1,
+		EndLine:       int(node.EndPosition().Row) + 1,
 	}
 }
 

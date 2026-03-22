@@ -1,0 +1,5 @@
+.git
+.goreleaser-dist
+testdata
+cmd/swe-bench-validate
+cmd/adit-validate

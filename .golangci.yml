@@ -1,0 +1,58 @@
+version: "2"
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+linters:
+  enable:
+    # Defaults
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+
+    # Style
+    - misspell
+
+    # Bugs
+    - bodyclose
+    - durationcheck
+    - nilerr
+
+    # Complexity
+    - cyclop
+    - gocognit
+    - nestif
+
+    # Security
+    - gosec
+
+    # Performance
+    - prealloc
+
+  settings:
+    cyclop:
+      max-complexity: 25
+    gocognit:
+      min-complexity: 40
+    nestif:
+      min-complexity: 10
+    gosec:
+      excludes:
+        - G115  # integer overflow uint->int (false positive for line numbers)
+        - G204  # subprocess with variable (expected: we run git)
+        - G304  # file inclusion via variable (expected: we read source files)
+
+exclusions:
+  paths:
+    - cmd/adit-validate/.*  # research tool, not production code
+  rules:
+    - path: _test\.go
+      linters:
+        - cyclop
+        - gocognit
+        - gosec
+        - prealloc

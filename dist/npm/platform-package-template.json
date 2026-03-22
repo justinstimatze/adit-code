@@ -1,0 +1,14 @@
+{
+  "_comment": "Template for platform-specific packages. Copy and adjust for each platform.",
+  "name": "@adit-code/PLATFORM-ARCH",
+  "version": "0.1.0",
+  "description": "Platform-specific binary for adit-code (PLATFORM-ARCH)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/justinstimatze/adit-code.git"
+  },
+  "os": ["PLATFORM"],
+  "cpu": ["ARCH"],
+  "files": ["adit", "adit.exe"]
+}

@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "adit-code"
+version = "0.1.0"
+description = "AI-navigability code structure analysis — measures how expensive your code is for AI to edit"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+keywords = ["ai", "code-quality", "static-analysis", "tree-sitter", "claude", "codex", "cursor"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
+]
+
+[project.urls]
+Homepage = "https://github.com/justinstimatze/adit-code"
+Repository = "https://github.com/justinstimatze/adit-code"
+Issues = "https://github.com/justinstimatze/adit-code/issues"
+
+[project.scripts]
+adit = "adit_code:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["adit_code"]

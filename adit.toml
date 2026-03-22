@@ -1,0 +1,8 @@
+# adit-code project-specific configuration.
+# This is NOT a recommended default — it overrides thresholds for adit's
+# own source code where interface implementations (Analyze, Extensions)
+# intentionally share names across 3 frontend files.
+# Your project should use adit.toml.example as a starting point instead.
+
+[per-path."*.go"]
+max_ambiguity_defs = 5

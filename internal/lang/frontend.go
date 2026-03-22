@@ -6,6 +6,8 @@ type Definition struct {
 	QualifiedName string // Class-qualified: "MyClass._validate"
 	Kind          string // "function" | "method" | "class" | "constant" | "type"
 	Line          int
+	EndLine       int // last line of the definition (0 if unknown)
+	ParamCount    int // number of parameters (excluding self/cls/receiver)
 }
 
 // Import is a symbol imported from another module.
@@ -18,10 +20,13 @@ type Import struct {
 
 // FileAnalysis is the result of parsing a single file.
 type FileAnalysis struct {
-	Path        string
-	Lines       int
-	Definitions []Definition
-	Imports     []Import
+	Path            string
+	Lines           int
+	MaxNestingDepth int // deepest control flow / scope nesting
+	NodeDiversity   int // count of distinct AST node types
+	MaxBranching    int // largest branching factor (switch/match cases)
+	Definitions     []Definition
+	Imports         []Import
 }
 
 // Frontend parses source files for a specific language.

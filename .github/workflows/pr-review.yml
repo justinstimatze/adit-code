@@ -1,0 +1,92 @@
+name: adit structural review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - run: go build ./cmd/adit
+
+      - name: Run adit diff
+        id: adit
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          RESULT=$(./adit score --diff "$BASE_SHA" . 2>/dev/null || echo '{"files_changed":0,"regressions_count":0,"files":[]}')
+          echo "result<<ADIT_EOF" >> "$GITHUB_OUTPUT"
+          echo "$RESULT" >> "$GITHUB_OUTPUT"
+          echo "ADIT_EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Post review comment
+        uses: actions/github-script@v7
+        env:
+          ADIT_RESULT: ${{ steps.adit.outputs.result }}
+        with:
+          script: |
+            const result = JSON.parse(process.env.ADIT_RESULT);
+            if (!result.files || result.files.length === 0) return;
+
+            let body = '### adit structural review\n\n';
+
+            const regressions = [];
+
+            for (const f of result.files) {
+              if (f.regressions && f.regressions.length > 0) {
+                for (const r of f.regressions) {
+                  let advice = '';
+                  if (r.metric === 'lines') advice = ' — consider splitting';
+                  if (r.metric === 'max_nesting_depth') advice = ' — consider extracting nested logic';
+                  if (r.metric === 'grep_noise') advice = ' — consider more distinctive names';
+                  if (r.metric === 'context_reads') advice = ' — more imports to chase';
+                  if (r.metric === 'blast_radius') advice = ' — more files depend on this';
+                  regressions.push(`\`${f.path}\`: ${r.metric} ${r.before}→${r.after} ▲${advice}`);
+                }
+              }
+            }
+
+            if (regressions.length === 0) {
+              body += '✅ No structural regressions detected.\n';
+            } else {
+              body += `⚠️ **${regressions.length} regression(s):**\n\n`;
+              for (const r of regressions) {
+                body += `- ${r}\n`;
+              }
+            }
+
+            body += '\n---\n*[adit-code](https://github.com/justinstimatze/adit-code) structural analysis*';
+
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.data.find(c => c.body.includes('adit structural review'));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
