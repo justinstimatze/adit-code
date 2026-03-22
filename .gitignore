@@ -1,0 +1,14 @@
+# Binary
+/adit
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Python lint cache (from testdata)
+.ruff_cache/
+__pycache__/
+
+# OS
+.DS_Store

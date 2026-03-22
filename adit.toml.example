@@ -1,0 +1,26 @@
+# adit-code configuration
+# Copy to adit.toml in your project root, or add [tool.adit] to pyproject.toml
+
+# Thresholds for `adit enforce`
+[thresholds]
+max_file_lines = 3000          # Size grade D or worse fails
+max_context_reads = 10         # Files with more than N local imports
+max_unnecessary_reads = 3      # Single-consumer imports that should be co-located
+max_ambiguity_defs = 3         # Name defined in N+ files = ambiguous
+max_blast_radius = 20          # File imported by 20+ files = too central
+max_cycle_length = 0           # 0 = no cycles allowed
+
+# What to scan
+[scan]
+languages = ["python", "typescript"]
+exclude = [
+  "*_test.go", "test_*.py", "*_test.py",
+  "*.test.ts", "*.spec.ts",
+  "**/__pycache__/**", "**/node_modules/**",
+  "**/vendor/**", "**/.venv/**",
+]
+
+# Context window (informational — shown in --pretty output)
+[context]
+window_tokens = 200_000
+usable_fraction = 0.75

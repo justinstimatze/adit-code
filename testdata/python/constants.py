@@ -1,0 +1,4 @@
+MAX_RETRIES = 3
+TRUST_HINTS = {"share": 0.5, "trade": 0.3}
+DEFAULT_TIMEOUT = 30
+API_VERSION = "v2"
