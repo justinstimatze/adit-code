@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/justinstimatze/adit-code/actions/workflows/ci.yml/badge.svg)](https://github.com/justinstimatze/adit-code/actions/workflows/ci.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/justinstimatze/adit-code?v=1)](https://goreportcard.com/report/github.com/justinstimatze/adit-code)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 Structural analysis for AI-edited codebases. Finds the files that cost your
 agent the most tool calls and tells you exactly what to fix.
@@ -340,5 +340,5 @@ adit score --pretty /path/to/project
 
 ## License
 
-MIT. All dependencies MIT or BSD-2. See [INFLUENCES.md](INFLUENCES.md) for
-full citation record, prior art search, and license audit.
+Apache 2.0. All dependencies MIT or BSD-2 compatible. See [INFLUENCES.md](INFLUENCES.md)
+for full citation record, prior art search, and license audit.
