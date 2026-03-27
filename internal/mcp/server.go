@@ -292,23 +292,23 @@ func handleBriefing(_ context.Context, req *mcp.CallToolRequest, args pathParams
 	t := sessionConfig.ThresholdsForPath(target.Path)
 
 	var briefing strings.Builder
-	briefing.WriteString(fmt.Sprintf("%s: %d lines (Grade %s), nesting %d, %d AST types\n",
+	fmt.Fprintf(&briefing, "%s: %d lines (Grade %s), nesting %d, %d AST types\n",
 		filepath.Base(target.Path), target.Lines, target.SizeGrade,
-		target.MaxNestingDepth, target.NodeDiversity))
+		target.MaxNestingDepth, target.NodeDiversity)
 
 	if target.MaxParams > 10 {
-		briefing.WriteString(fmt.Sprintf("⚠ Function with %d parameters\n", target.MaxParams))
+		fmt.Fprintf(&briefing, "⚠ Function with %d parameters\n", target.MaxParams)
 	}
 	if t.MaxBlastRadius > 0 && target.BlastRadius.ImportedByCount > t.MaxBlastRadius/4 {
-		briefing.WriteString(fmt.Sprintf("⚠ %d files import from here — verify callers after editing\n",
-			target.BlastRadius.ImportedByCount))
+		fmt.Fprintf(&briefing, "⚠ %d files import from here — verify callers after editing\n",
+			target.BlastRadius.ImportedByCount)
 	}
 	if target.Ambiguity.GrepNoise > 0 {
-		briefing.WriteString(fmt.Sprintf("⚠ Grep noise %d — some names here also defined in other files\n",
-			target.Ambiguity.GrepNoise))
+		fmt.Fprintf(&briefing, "⚠ Grep noise %d — some names here also defined in other files\n",
+			target.Ambiguity.GrepNoise)
 	}
 	for _, r := range target.ContextReads.Relocatable {
-		briefing.WriteString(fmt.Sprintf("⚠ %s only used here — co-locate from %s\n", r.Name, r.From))
+		fmt.Fprintf(&briefing, "⚠ %s only used here — co-locate from %s\n", r.Name, r.From)
 	}
 	if target.Comments.CommentLines == 0 && target.Lines > 200 {
 		briefing.WriteString("⚠ No comments in large file\n")
@@ -317,8 +317,8 @@ func handleBriefing(_ context.Context, req *mcp.CallToolRequest, args pathParams
 		for _, site := range a.Sites {
 			siteAbs, _ := filepath.Abs(site.File)
 			if siteAbs == absPath {
-				briefing.WriteString(fmt.Sprintf("⚠ %s defined in %d other files — use qualified search\n",
-					a.Name, a.Count-1))
+				fmt.Fprintf(&briefing, "⚠ %s defined in %d other files — use qualified search\n",
+					a.Name, a.Count-1)
 				break
 			}
 		}
