@@ -4,6 +4,25 @@ All notable changes to adit-code will be documented in this file.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.0] - 2026-09-06
+
+### Added
+- Fourth language frontend: Rust (via tree-sitter-rust), covering imports,
+  functions, structs, enums, traits, impl blocks, modules, and macro_rules!
+- FFI boundary metric: counts `extern "C"` crossings per file, surfaced in
+  `--pretty` output, JSON, `--diff` regression tracking, and a new
+  `adit_ffi_boundary` MCP tool (9 tools total, up from 8)
+- `MacroReferencedDefs` warning in `adit_briefing`: flags definitions only
+  reachable via macro invocation, invisible to plain identifier search
+
+### Fixed
+- Else-if chain undercounting in the max-branching metric: Go, Rust, and
+  TypeScript all nest `else if` one level deeper than Python's flat
+  `elif_clause` siblings, capping long chains at branching factor 2
+  regardless of length
+- `cmd/adit-validate` frontend list brought to parity across all four
+  languages (three of its four construction sites were also missing Go)
+
 ## [0.1.0] - 2026-03-21
 
 ### Added
