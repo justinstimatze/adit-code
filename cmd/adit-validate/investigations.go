@@ -40,6 +40,7 @@ func runInvestigations(repoPath, sessionsPath string) {
 		lang.NewPythonFrontend(),
 		lang.NewTypeScriptFrontend(),
 		lang.NewGoFrontend(),
+		lang.NewRustFrontend(),
 	}
 	pipeline := score.NewPipeline(frontends, cfg)
 	result, err := pipeline.ScoreRepo([]string{repoPath})

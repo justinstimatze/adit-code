@@ -100,6 +100,7 @@ All MIT or BSD-2 licensed. No code copied.
 - [tree-sitter-python](https://github.com/tree-sitter/tree-sitter-python) (MIT) — Python grammar
 - [tree-sitter-typescript](https://github.com/tree-sitter/tree-sitter-typescript) (MIT) — TypeScript grammar
 - [tree-sitter-go](https://github.com/tree-sitter/tree-sitter-go) (MIT) — Go grammar
+- [tree-sitter-rust](https://github.com/tree-sitter/tree-sitter-rust) (MIT) — Rust grammar
 - [modelcontextprotocol/go-sdk](https://github.com/modelcontextprotocol/go-sdk) (MIT) — official MCP Go SDK
 - [BurntSushi/toml](https://github.com/BurntSushi/toml) (MIT) — TOML config parsing
 - [urfave/cli](https://github.com/urfave/cli) (MIT) — CLI framework

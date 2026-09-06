@@ -5,7 +5,7 @@ import (
 )
 
 // nestingNodeKinds are AST node types that increase nesting depth.
-// Covers Python, TypeScript/JS, and Go control flow and scope constructs.
+// Covers Python, TypeScript/JS, Go, and Rust control flow and scope constructs.
 var nestingNodeKinds = map[string]bool{
 	// Control flow (shared across languages)
 	"if_statement":    true,
@@ -33,6 +33,18 @@ var nestingNodeKinds = map[string]bool{
 	"communication_case":    true,
 	"expression_case":       true,
 	"default_case":          true,
+
+	// Rust-specific
+	"if_expression":      true,
+	"while_expression":   true,
+	"loop_expression":    true,
+	"for_expression":     true,
+	"match_expression":   true,
+	"match_arm":          true,
+	"closure_expression": true,
+	"function_item":      true,
+	"impl_item":          true,
+	"trait_item":         true,
 
 	// Scope-introducing (all languages)
 	"function_definition":  true,

@@ -16,9 +16,9 @@ Layer model: **Library -> MCP Server -> CLI**.
 
 ```
 internal/score/     Language-agnostic scoring engine. Receives parsed data, computes metrics.
-internal/lang/      Tree-sitter frontends (Python, TypeScript, Go). Each implements Frontend interface.
+internal/lang/      Tree-sitter frontends (Python, TypeScript, Go, Rust). Each implements Frontend interface.
 internal/config/    Config loading from adit.toml or pyproject.toml [tool.adit]. Per-path overrides.
-internal/mcp/       MCP server (stdio, 8 tools). Thin wrapper around the scoring pipeline.
+internal/mcp/       MCP server (stdio, 9 tools). Thin wrapper around the scoring pipeline.
 internal/output/    Pretty printing and threshold checking.
 internal/diff/      Git operations for --diff mode (changed files, file-at-ref).
 cmd/adit/main.go    CLI entry point. score, enforce, mcp subcommands.
@@ -29,7 +29,7 @@ dist/npm/           npm package metadata (not yet published).
 
 ## Key Design Decisions
 
-- **JSON-default output.** The primary consumer is CI or an AI tool, not a human. `--pretty` is opt-in.
+- **JSON-default output.** CI and AI tools are the primary consumers. `--pretty` is opt-in for humans.
 - **No composite score.** Five independent metrics, five independent thresholds. A file can be grade A on size but terrible on co-location — that tells you exactly what to fix.
 - **All scoring is language-agnostic.** The `internal/score/` package never imports tree-sitter. It receives `[]lang.FileAnalysis` structs. Language-specific parsing lives in `internal/lang/`.
 - **Two-pass pipeline.** Pass 1: parse all files, collect imports and definitions. Pass 2: score each file using cross-file maps (consumer counts, name index).
@@ -124,7 +124,47 @@ expected and not actionable — interface implementations inherently share names
   filename patterns, but detection is heuristic. Some generated files may
   slip through (especially generated-but-hand-edited hybrids).
 
+- **Macro-only references (Rust).** `MacroReferenceCount` only sees raw
+  identifier tokens inside `macro_rules!` invocations — it has no visibility
+  into proc-macro expansion at all, so it helps with declarative-macro
+  forwarding patterns and nothing else. A matched identifier is only credited
+  when its name is unambiguous among local definitions; two same-named defs
+  sharing a match are both skipped rather than double-credited. Surfaced via
+  `FileScore.MacroReferencedDefs` and an `adit_briefing` warning.
+
 ## Not Yet Published
 
 - PyPI binary wrapper (`pip install adit-code`) — metadata ready in `dist/pypi/`
 - npm binary wrapper (`npm install adit-code`) — metadata ready in `dist/npm/`
+
+<!-- defn:begin -->
+## Code Navigation and Editing
+
+**The database is authoritative. Files are an I/O projection.** This project
+is indexed in defn. For **Go code**, use the `code` MCP tool — **not**
+Read, Edit, Write, or Grep. Reserve those built-in tools for non-Go files
+(YAML, JSON, Markdown, shell, `go.mod`).
+
+```
+code(op: "read", name: "handleEdit")           -- full source by name
+code(op: "read", name: "server.go:272")        -- or by file:line
+code(op: "impact", name: "Render")             -- blast radius + test coverage
+code(op: "edit", name: "Foo", new_body: "...") -- edit, auto-emit + build
+code(op: "search", pattern: "%Auth%")          -- name pattern (% wildcard)
+code(op: "search", pattern: "authentication")  -- body text search
+code(op: "test", name: "Render")               -- run affected tests only
+```
+
+All ops: read, search, impact, explain, untested, edit, create, delete, rename, move, test, apply, diff, history, find, sync, query, overview, patch.
+
+### Why defn for Go, not Read/Edit/Grep
+
+- `code(op:"read")` returns a whole definition by name — no line-number guessing, no reading a file to find one function.
+- `code(op:"edit")` updates one definition, emits the file, and rebuilds the reference graph in one call. A raw file Edit leaves defn's graph stale until a `sync`.
+- `code(op:"rename")` / `move` update every reference and import site across the repo in one call — many fragile Edits otherwise.
+- `code(op:"impact")` gives callers + transitive blast radius + test coverage before you touch anything.
+
+If you do edit a `.go` file with a built-in tool, call `code(op:"sync", file:"path")` afterward so the graph stays correct.
+
+**Rule of thumb:** run `impact` before modifying an existing definition; skip it for brand-new ones.
+<!-- defn:end -->

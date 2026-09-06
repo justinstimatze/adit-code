@@ -36,6 +36,7 @@ func ensureSession() {
 			lang.NewPythonFrontend(),
 			lang.NewTypeScriptFrontend(),
 			lang.NewGoFrontend(),
+			lang.NewRustFrontend(),
 		}
 		sessionPipeline = score.NewPipeline(frontends, cfg)
 	})
@@ -102,6 +103,11 @@ func Run(ctx context.Context) error {
 		Name:        "adit_blast_radius",
 		Description: "Show how many files import from a given file and which names are most widely consumed",
 	}, handleBlastRadius)
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "adit_ffi_boundary",
+		Description: "Show extern \"C\" boundary crossings for a file (Rust): both exported extern \"C\" fn definitions and extern \"C\" { } declarations, a signal for cross-language coupling invisible to use/mod import tracking",
+	}, handleFFIBoundary)
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "adit_cycles",
@@ -313,6 +319,10 @@ func handleBriefing(_ context.Context, req *mcp.CallToolRequest, args pathParams
 	if target.Comments.CommentLines == 0 && target.Lines > 200 {
 		briefing.WriteString("⚠ No comments in large file\n")
 	}
+	if target.MacroReferencedDefs > 0 {
+		fmt.Fprintf(&briefing, "⚠ %d definition(s) referenced only via macro invocations — not visible to plain identifier search\n",
+			target.MacroReferencedDefs)
+	}
 	for _, a := range result.Summary.AmbiguousNames {
 		for _, site := range a.Sites {
 			siteAbs, _ := filepath.Abs(site.File)
@@ -355,4 +365,31 @@ func handleDiff(_ context.Context, req *mcp.CallToolRequest, args diffParams) (*
 			&mcp.TextContent{Text: string(data)},
 		},
 	}, nil, nil
+}
+
+func handleFFIBoundary(_ context.Context, req *mcp.CallToolRequest, args pathParams) (*mcp.CallToolResult, any, error) {
+	if args.Path == "" {
+		return nil, nil, fmt.Errorf("path is required")
+	}
+
+	dir := filepath.Dir(args.Path)
+	repo, err := cachedScoreRepo([]string{dir})
+	if err != nil {
+		return nil, nil, fmt.Errorf("analysis failed: %w", err)
+	}
+
+	absPath, _ := filepath.Abs(args.Path)
+	for _, fs := range repo.Files {
+		fAbs, _ := filepath.Abs(fs.Path)
+		if fAbs == absPath {
+			data, _ := json.MarshalIndent(fs.FFIBoundary, "", "  ")
+			return &mcp.CallToolResult{
+				Content: []mcp.Content{
+					&mcp.TextContent{Text: string(data)},
+				},
+			}, nil, nil
+		}
+	}
+
+	return nil, nil, fmt.Errorf("file not found: %s", args.Path)
 }

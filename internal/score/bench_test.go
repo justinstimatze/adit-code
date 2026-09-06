@@ -14,6 +14,7 @@ func newAllLangPipeline() *score.Pipeline {
 		lang.NewPythonFrontend(),
 		lang.NewTypeScriptFrontend(),
 		lang.NewGoFrontend(),
+		lang.NewRustFrontend(),
 	}
 	return score.NewPipeline(frontends, cfg)
 }

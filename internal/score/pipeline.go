@@ -139,18 +139,20 @@ func (p *Pipeline) scoreRepoInternal(paths []string) (*RepoScore, *repoContext, 
 		src := fileSources[path]
 
 		fs := FileScore{
-			Path:            path,
-			Lines:           fa.Lines,
-			SizeGrade:       SizeGrade(fa.Lines),
-			MaxNestingDepth: fa.MaxNestingDepth,
-			NodeDiversity:   fa.NodeDiversity,
-			MaxParams:       ComputeMaxParams(fa),
-			Functions:       ComputeFunctionStats(fa),
-			ContextReads:    ComputeContextReads(fa, consumers, localCtx),
-			Ambiguity:       ComputeAmbiguity(fa, nIdx),
-			Comments:        ComputeCommentStats(fa, src),
-			Graph:           ComputeGraphMetrics(path, impGraph),
-			BlastRadius:     ComputeBlastRadius(path, analyses, ncIdx),
+			Path:                path,
+			Lines:               fa.Lines,
+			SizeGrade:           SizeGrade(fa.Lines),
+			MaxNestingDepth:     fa.MaxNestingDepth,
+			NodeDiversity:       fa.NodeDiversity,
+			MaxParams:           ComputeMaxParams(fa),
+			Functions:           ComputeFunctionStats(fa),
+			ContextReads:        ComputeContextReads(fa, consumers, localCtx),
+			Ambiguity:           ComputeAmbiguity(fa, nIdx),
+			Comments:            ComputeCommentStats(fa, src),
+			Graph:               ComputeGraphMetrics(path, impGraph),
+			BlastRadius:         ComputeBlastRadius(path, analyses, ncIdx),
+			FFIBoundary:         ComputeFFIBoundary(fa),
+			MacroReferencedDefs: CountMacroReferencedDefs(fa),
 		}
 		fileScores = append(fileScores, fs)
 	}
@@ -165,10 +167,18 @@ func (p *Pipeline) scoreRepoInternal(paths []string) (*RepoScore, *repoContext, 
 
 	var allRelocatable []RelocatableImport
 	var highBlast []FileScore
+	var highFFI []FileScore
 	for _, fs := range fileScores {
 		allRelocatable = append(allRelocatable, fs.ContextReads.Relocatable...)
 		if fs.BlastRadius.ImportedByCount >= p.cfg.Thresholds.MaxBlastRadius {
 			highBlast = append(highBlast, fs)
+		}
+		// Unconditional visibility: any FFI boundary crossing is worth
+		// surfacing in the summary regardless of enforcement config, the
+		// same way MaxFFIBoundary being unset doesn't hide it -- it only
+		// controls whether CheckFileThresholds fails CI on it.
+		if fs.FFIBoundary.ExternCCount > 0 {
+			highFFI = append(highFFI, fs)
 		}
 	}
 
@@ -190,6 +200,7 @@ func (p *Pipeline) scoreRepoInternal(paths []string) (*RepoScore, *repoContext, 
 			AmbiguousNames: ambiguousNames,
 			Cycles:         cycles,
 			HighBlast:      highBlast,
+			HighFFI:        highFFI,
 		},
 	}, ctx, nil
 }
@@ -259,16 +270,18 @@ func (p *Pipeline) ScoreRepoDiff(paths []string, ref string) (*DiffResult, error
 			fa, parseErr := p.analyzeBytes(absPath, refContent)
 			if parseErr == nil {
 				bs := FileScore{
-					Path:            absPath,
-					Lines:           fa.Lines,
-					SizeGrade:       SizeGrade(fa.Lines),
-					MaxNestingDepth: fa.MaxNestingDepth,
-					NodeDiversity:   fa.NodeDiversity,
-					MaxParams:       ComputeMaxParams(fa),
-					Functions:       ComputeFunctionStats(fa),
-					ContextReads:    ComputeContextReads(fa, consumers, localCtx),
-					Ambiguity:       ComputeAmbiguity(fa, nIdx),
-					BlastRadius:     ComputeBlastRadius(absPath, analyses, ncIdx),
+					Path:                absPath,
+					Lines:               fa.Lines,
+					SizeGrade:           SizeGrade(fa.Lines),
+					MaxNestingDepth:     fa.MaxNestingDepth,
+					NodeDiversity:       fa.NodeDiversity,
+					MaxParams:           ComputeMaxParams(fa),
+					Functions:           ComputeFunctionStats(fa),
+					ContextReads:        ComputeContextReads(fa, consumers, localCtx),
+					Ambiguity:           ComputeAmbiguity(fa, nIdx),
+					BlastRadius:         ComputeBlastRadius(absPath, analyses, ncIdx),
+					FFIBoundary:         ComputeFFIBoundary(fa),
+					MacroReferencedDefs: CountMacroReferencedDefs(fa),
 				}
 				beforeScore = &bs
 			}
@@ -328,6 +341,7 @@ func computeRegressions(before, after *FileScore) []Regression {
 	check("unnecessary_reads", before.ContextReads.Unnecessary, after.ContextReads.Unnecessary)
 	check("grep_noise", before.Ambiguity.GrepNoise, after.Ambiguity.GrepNoise)
 	check("blast_radius", before.BlastRadius.ImportedByCount, after.BlastRadius.ImportedByCount)
+	check("ffi_boundary", before.FFIBoundary.ExternCCount, after.FFIBoundary.ExternCCount)
 	return regressions
 }
 
@@ -439,6 +453,8 @@ func (p *Pipeline) createFrontends() []lang.Frontend {
 			result[i] = lang.NewTypeScriptFrontend()
 		case *lang.GoFrontend:
 			result[i] = lang.NewGoFrontend()
+		case *lang.RustFrontend:
+			result[i] = lang.NewRustFrontend()
 		default:
 			result[i] = fe // fallback: share (unsafe but better than panic)
 		}

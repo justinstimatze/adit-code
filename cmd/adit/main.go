@@ -60,6 +60,7 @@ func buildPipeline(c *cli.Context) (*score.Pipeline, config.Config, error) {
 		lang.NewPythonFrontend(),
 		lang.NewTypeScriptFrontend(),
 		lang.NewGoFrontend(),
+		lang.NewRustFrontend(),
 	}
 	return score.NewPipeline(frontends, cfg), cfg, nil
 }

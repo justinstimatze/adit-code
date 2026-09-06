@@ -84,6 +84,9 @@ func CheckFileThresholds(path string, f *score.FileScore, cfg config.Config) []s
 	if t.MaxParams > 0 && f.MaxParams > t.MaxParams {
 		violations = append(violations, fmt.Sprintf("%s: max params %d (max %d)", path, f.MaxParams, t.MaxParams))
 	}
+	if t.MaxFFIBoundary > 0 && f.FFIBoundary.ExternCCount > t.MaxFFIBoundary {
+		violations = append(violations, fmt.Sprintf("%s: FFI boundary %d (max %d)", path, f.FFIBoundary.ExternCCount, t.MaxFFIBoundary))
+	}
 	return violations
 }
 

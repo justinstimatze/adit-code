@@ -1,11 +1,11 @@
 # adit-code
 
+Structural analysis for AI-edited codebases. Finds the files that cost your
+agent the most tool calls and tells you exactly what to fix.
+
 [![CI](https://github.com/justinstimatze/adit-code/actions/workflows/ci.yml/badge.svg)](https://github.com/justinstimatze/adit-code/actions/workflows/ci.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/justinstimatze/adit-code?v=1)](https://goreportcard.com/report/github.com/justinstimatze/adit-code)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-
-Structural analysis for AI-edited codebases. Finds the files that cost your
-agent the most tool calls and tells you exactly what to fix.
 
 AI coding agents read files, grep for definitions, and trace imports. When a
 file has 51 parameters on one function, 8 ambiguous names polluting every grep,
@@ -99,9 +99,9 @@ docker run --rm -v "$PWD":/src -w /src ghcr.io/justinstimatze/adit-code score --
 go install github.com/justinstimatze/adit-code/cmd/adit@latest
 ```
 
-Single binary. Analyzes Python, TypeScript, and Go with one tool — no need
-for separate linters per language. Uses tree-sitter for parsing. No runtime
-dependencies.
+**Single binary.** Analyzes Python, TypeScript, Go, and Rust with one tool — no
+need for separate linters per language. Uses tree-sitter for parsing. No
+runtime dependencies.
 
 Designed for codebases where AI agents do most or all of the editing.
 Some metrics overlap with traditional linters — adit's value is the
@@ -121,21 +121,21 @@ adit mcp                              # MCP server for Claude Code / Codex
 
 ## What It Measures
 
-Five metrics. No composite score — each maps to a specific agent cost.
+**Five metrics.** No composite score — each maps to a specific agent cost.
 
 **Unnecessary Reads** — Single-consumer imports that should be co-located.
 `TRUST_HINTS` is imported by only `handlers.py` — move it there and save
 the agent a `Read` tool call. *No existing linter checks this.*
 
-**Grep Noise** — How many false positives does the agent hit when searching
-for names in this file? `_validate` defined in 5 files = 4 extra grep results
-the agent must open, read, and discard. *No existing linter checks this.*
+**Grep Noise** — False positives the agent hits when searching for names in
+this file. `_validate` defined in 5 files = 4 extra grep results the agent
+must open, read, and discard. *No existing linter checks this.*
 
-**File Size** — How many `Read` calls does this file cost? Agents read in
+**File Size** — `Read` calls this file costs the agent. Agents read in
 chunks. Larger files require more reads and the agent loses coherence across
 distant methods. Grades A (<500 lines) through F (5000+).
 
-**Blast Radius** — How many files import from this one? High-blast files are
+**Blast Radius** — Files that import from this one. High-blast files are
 central definitions the agent must re-read for context on every edit.
 
 **Import Cycles** — Circular dependencies that trap the agent in read loops
@@ -177,7 +177,7 @@ walking up from the target path.
 }
 ```
 
-8 tools including `adit_briefing` — call before editing any file to get
+9 tools including `adit_briefing` — call before editing any file to get
 cross-file warnings upfront:
 
 ```
@@ -189,11 +189,11 @@ handler.py: 890 lines (Grade B), nesting 5, 47 AST types
 
 This front-loads information the agent would otherwise discover one grep
 at a time. Also: `adit_score_repo`, `adit_score_file`, `adit_relocatable`,
-`adit_ambiguous`, `adit_blast_radius`, `adit_cycles`, `adit_diff`.
+`adit_ambiguous`, `adit_blast_radius`, `adit_ffi_boundary`, `adit_cycles`, `adit_diff`.
 
 ### CLI + JSON (any agent that shells out)
 
-JSON-default output. Any agent that can run commands and parse JSON works:
+**JSON-default output.** Any agent that can run commands and parse JSON works:
 
 ```bash
 adit score .              # full analysis
@@ -273,7 +273,7 @@ indexed lookups rather than O(n²) scans:
 
 ## Across Open Source Projects
 
-adit scored against 33 open source projects across Python, TypeScript, and Go.
+33 codebases were scored end to end, spanning Python, TypeScript, and Go.
 Generated files (migrations, protobuf, etc.) are auto-detected and excluded.
 
 **Python**
@@ -340,5 +340,5 @@ adit score --pretty /path/to/project
 
 ## License
 
-Apache 2.0. All dependencies MIT or BSD-2 compatible. See [INFLUENCES.md](INFLUENCES.md)
+**Apache 2.0.** All dependencies MIT or BSD-2 compatible. See [INFLUENCES.md](INFLUENCES.md)
 for full citation record, prior art search, and license audit.

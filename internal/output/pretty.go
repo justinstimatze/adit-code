@@ -86,6 +86,13 @@ func PrintPrettyColor(result *score.RepoScore, version string, quiet, color bool
 		}
 	}
 
+	if len(result.Summary.HighFFI) > 0 {
+		fmt.Printf("\n  FFI boundary (extern \"C\" crossings — cannot be understood from source alone):\n")
+		for _, f := range result.Summary.HighFFI {
+			fmt.Printf("    %s: %d (%s)\n", f.Path, f.FFIBoundary.ExternCCount, strings.Join(f.FFIBoundary.ExternCNames, ", "))
+		}
+	}
+
 	// Flag large files with no comments
 	var uncommented []score.FileScore
 	for _, f := range result.Files {

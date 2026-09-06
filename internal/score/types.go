@@ -4,7 +4,7 @@ package score
 // with its only consumer file.
 type RelocatableImport struct {
 	Name     string `json:"name"`
-	Kind     string `json:"kind"`      // "constant" | "function" | "type" | "unknown"
+	Kind     string `json:"kind"`      // "constant" | "function" | "type" | "module" | "unknown"
 	From     string `json:"from"`      // source file path
 	FromLine int    `json:"from_line"` // line number in source file
 	To       string `json:"to"`        // destination (consumer) file path
@@ -69,18 +69,20 @@ type FunctionStats struct {
 
 // FileScore is the complete analysis result for a single file.
 type FileScore struct {
-	Path            string          `json:"path"`
-	Lines           int             `json:"lines"`
-	SizeGrade       string          `json:"size_grade"`
-	MaxNestingDepth int             `json:"max_nesting_depth"`
-	NodeDiversity   int             `json:"node_diversity"`
-	MaxParams       int             `json:"max_params"`
-	Functions       FunctionStats   `json:"functions"`
-	ContextReads    ContextReads    `json:"context_reads"`
-	Ambiguity       AmbiguityResult `json:"ambiguity"`
-	Comments        CommentStats    `json:"comments"`
-	Graph           GraphMetrics    `json:"graph"`
-	BlastRadius     BlastRadius     `json:"blast_radius"`
+	Path                string          `json:"path"`
+	Lines               int             `json:"lines"`
+	SizeGrade           string          `json:"size_grade"`
+	MaxNestingDepth     int             `json:"max_nesting_depth"`
+	NodeDiversity       int             `json:"node_diversity"`
+	MaxParams           int             `json:"max_params"`
+	Functions           FunctionStats   `json:"functions"`
+	ContextReads        ContextReads    `json:"context_reads"`
+	Ambiguity           AmbiguityResult `json:"ambiguity"`
+	Comments            CommentStats    `json:"comments"`
+	Graph               GraphMetrics    `json:"graph"`
+	BlastRadius         BlastRadius     `json:"blast_radius"`
+	FFIBoundary         FFIBoundary     `json:"ffi_boundary"`
+	MacroReferencedDefs int             `json:"macro_referenced_defs,omitempty"`
 }
 
 // RepoSummary aggregates cross-file findings.
@@ -89,6 +91,7 @@ type RepoSummary struct {
 	AmbiguousNames []AmbiguousName     `json:"ambiguous_names,omitempty"`
 	Cycles         []ImportCycle       `json:"cycles,omitempty"`
 	HighBlast      []FileScore         `json:"high_blast_radius,omitempty"`
+	HighFFI        []FileScore         `json:"high_ffi_boundary,omitempty"`
 }
 
 // RepoScore is the top-level output of adit score.

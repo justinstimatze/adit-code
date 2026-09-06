@@ -337,3 +337,19 @@ func TestComputeRegressions_Improvement(t *testing.T) {
 		t.Errorf("improvements should not be regressions, got %d", len(regs))
 	}
 }
+
+func TestComputeRegressions_FFIBoundary(t *testing.T) {
+	before := &FileScore{
+		FFIBoundary: FFIBoundary{ExternCCount: 0},
+	}
+	after := &FileScore{
+		FFIBoundary: FFIBoundary{ExternCCount: 5, ExternCNames: []string{"strtol", "abort"}},
+	}
+	regs := computeRegressions(before, after)
+	if len(regs) != 1 {
+		t.Fatalf("expected 1 regression, got %d", len(regs))
+	}
+	if regs[0].Metric != "ffi_boundary" || regs[0].Before != 0 || regs[0].After != 5 || regs[0].Delta != 5 {
+		t.Errorf("unexpected regression: %+v", regs[0])
+	}
+}

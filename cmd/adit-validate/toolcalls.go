@@ -48,6 +48,8 @@ func runToolCallValidation(repoPath, sessionsPath string) {
 	frontends := []lang.Frontend{
 		lang.NewPythonFrontend(),
 		lang.NewTypeScriptFrontend(),
+		lang.NewGoFrontend(),
+		lang.NewRustFrontend(),
 	}
 	pipeline := score.NewPipeline(frontends, cfg)
 	result, err := pipeline.ScoreRepo([]string{repoPath})

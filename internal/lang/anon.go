@@ -16,6 +16,9 @@ var anonymousFunctionKinds = map[string]string{
 
 	// Go
 	"func_literal": "closure",
+
+	// Rust
+	"closure_expression": "closure",
 }
 
 // collectAnonymousFunctions recursively walks the AST to find anonymous

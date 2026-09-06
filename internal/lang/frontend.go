@@ -4,17 +4,31 @@ package lang
 type Definition struct {
 	Name          string // Short name: "_validate"
 	QualifiedName string // Class-qualified: "MyClass._validate"
-	Kind          string // "function" | "method" | "class" | "constant" | "type"
+	Kind          string // "function" | "method" | "class" | "constant" | "type" | "module"
 	Line          int
 	EndLine       int // last line of the definition (0 if unknown)
 	ParamCount    int // number of parameters (excluding self/cls/receiver)
+
+	// ForeignABI is the calling-convention ABI this definition is exposed
+	// under (e.g. "C" for `extern "C" fn`), or "" if it isn't a foreign-ABI
+	// boundary. Only set by frontends for languages with such a concept
+	// (currently Rust).
+	ForeignABI string
+
+	// MacroReferenceCount counts identifier-token matches for this
+	// definition's name found inside macro_invocation token trees in the
+	// same file. A declarative-macro-only heuristic: it can't see what a
+	// macro expands to, only that this name was passed as a raw token
+	// somewhere a macro was invoked. Only set by frontends with a macro
+	// concept (currently Rust).
+	MacroReferenceCount int
 }
 
 // Import is a symbol imported from another module.
 type Import struct {
 	Name         string // Imported symbol name
 	SourceModule string // Module path (relative or absolute)
-	Kind         string // "constant" | "function" | "type" | "unknown"
+	Kind         string // "constant" | "function" | "type" | "module" | "unknown"
 	Line         int
 }
 

@@ -27,6 +27,7 @@ type ThresholdConfig struct {
 	MaxCycleLength      int `toml:"max_cycle_length"`
 	MaxNestingDepth     int `toml:"max_nesting_depth"` // 0 = not enforced
 	MaxParams           int `toml:"max_params"`        // 0 = not enforced
+	MaxFFIBoundary      int `toml:"max_ffi_boundary"`  // 0 = not enforced. Gates only adit enforce/CI-fail behavior -- the --pretty "FFI boundary" summary lists any file with ExternCCount > 0 unconditionally, regardless of this threshold.
 }
 
 // ScanConfig controls what to scan.
@@ -174,6 +175,9 @@ func mergeThresholds(base, override ThresholdConfig) ThresholdConfig {
 	}
 	if override.MaxParams > 0 {
 		base.MaxParams = override.MaxParams
+	}
+	if override.MaxFFIBoundary > 0 {
+		base.MaxFFIBoundary = override.MaxFFIBoundary
 	}
 	return base
 }
