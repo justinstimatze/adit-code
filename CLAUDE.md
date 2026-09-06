@@ -88,7 +88,7 @@ To reproduce: `python3 cmd/swe-bench-validate/main.py && python3 cmd/swe-bench-v
 
 The Go source should score well. If it doesn't, fix the structure.
 Note: `Extensions` and `Analyze` show as ambiguous because they're defined in
-all three language frontend files (implementing the same interface). This is
+all four language frontend files (implementing the same interface). This is
 expected and not actionable — interface implementations inherently share names.
 
 ## Investigation Results (completed)

@@ -211,53 +211,7 @@ func (f *RustFrontend) Analyze(path string, src []byte) (*FileAnalysis, error) {
 
 	if cursor.GotoFirstChild() {
 		for {
-			node := cursor.Node()
-			switch node.Kind() {
-			case "function_item":
-				if def, ok := extractRustFuncItem(node, src, ""); ok {
-					fa.Definitions = append(fa.Definitions, def)
-				}
-			case "impl_item":
-				fa.Definitions = append(fa.Definitions, extractRustImplMethods(node, src)...)
-			case "struct_item":
-				if def, ok := extractRustNamedItem(node, src, "type"); ok {
-					fa.Definitions = append(fa.Definitions, def)
-				}
-			case "enum_item":
-				if def, ok := extractRustNamedItem(node, src, "type"); ok {
-					fa.Definitions = append(fa.Definitions, def)
-				}
-			case "trait_item":
-				if def, ok := extractRustNamedItem(node, src, "type"); ok {
-					fa.Definitions = append(fa.Definitions, def)
-				}
-				fa.Definitions = append(fa.Definitions, extractRustTraitMethods(node, src)...)
-			case "type_item":
-				if def, ok := extractRustNamedItem(node, src, "type"); ok {
-					fa.Definitions = append(fa.Definitions, def)
-				}
-			case "mod_item":
-				if def, ok := extractRustNamedItem(node, src, "module"); ok {
-					fa.Definitions = append(fa.Definitions, def)
-				}
-			case "const_item":
-				if def, ok := extractRustValueItem(node, src); ok {
-					fa.Definitions = append(fa.Definitions, def)
-				}
-			case "static_item":
-				if def, ok := extractRustValueItem(node, src); ok {
-					fa.Definitions = append(fa.Definitions, def)
-				}
-			case "macro_definition":
-				if def, ok := extractRustNamedItem(node, src, "function"); ok {
-					fa.Definitions = append(fa.Definitions, def)
-				}
-			case "use_declaration":
-				fa.Imports = append(fa.Imports, extractRustUse(node, src)...)
-			case "foreign_mod_item":
-				fa.Imports = append(fa.Imports, extractRustExternBlock(node, src)...)
-			}
-
+			extractRustTopLevelItem(cursor.Node(), src, fa)
 			if !cursor.GotoNextSibling() {
 				break
 			}
@@ -518,5 +472,47 @@ func rustDefKindToImportKind(defKind string) string {
 		return "constant"
 	default:
 		return "unknown"
+	}
+}
+
+// extractRustTopLevelItem dispatches a single top-level node to the
+// extractor for its kind, appending any resulting definition or imports
+// to fa. Split out of Analyze to keep the walk loop's cognitive
+// complexity low despite the wide set of top-level item kinds.
+func extractRustTopLevelItem(node *tree_sitter.Node, src []byte, fa *FileAnalysis) {
+	switch node.Kind() {
+	case "function_item":
+		if def, ok := extractRustFuncItem(node, src, ""); ok {
+			fa.Definitions = append(fa.Definitions, def)
+		}
+	case "impl_item":
+		fa.Definitions = append(fa.Definitions, extractRustImplMethods(node, src)...)
+	case "struct_item", "enum_item", "trait_item":
+		if def, ok := extractRustNamedItem(node, src, "type"); ok {
+			fa.Definitions = append(fa.Definitions, def)
+		}
+		if node.Kind() == "trait_item" {
+			fa.Definitions = append(fa.Definitions, extractRustTraitMethods(node, src)...)
+		}
+	case "type_item":
+		if def, ok := extractRustNamedItem(node, src, "type"); ok {
+			fa.Definitions = append(fa.Definitions, def)
+		}
+	case "mod_item":
+		if def, ok := extractRustNamedItem(node, src, "module"); ok {
+			fa.Definitions = append(fa.Definitions, def)
+		}
+	case "const_item", "static_item":
+		if def, ok := extractRustValueItem(node, src); ok {
+			fa.Definitions = append(fa.Definitions, def)
+		}
+	case "macro_definition":
+		if def, ok := extractRustNamedItem(node, src, "function"); ok {
+			fa.Definitions = append(fa.Definitions, def)
+		}
+	case "use_declaration":
+		fa.Imports = append(fa.Imports, extractRustUse(node, src)...)
+	case "foreign_mod_item":
+		fa.Imports = append(fa.Imports, extractRustExternBlock(node, src)...)
 	}
 }
